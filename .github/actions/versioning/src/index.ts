@@ -113,21 +113,21 @@ async function run() {
     const nextVersion = getNextVersion(currentVersion, versionIncrementType);
     info(`Application next Version: ${nextVersion}`);
 
-    const createTagResponse = await octokit.rest.git.createTag({
-      owner,
-      repo,
-      tag: nextVersion,
-      message: `Release ${nextVersion}`,
-      object: context.sha,
-      type: "commit",
-    });
+    // const createTagResponse = await octokit.rest.git.createTag({
+    //   owner,
+    //   repo,
+    //   tag: nextVersion,
+    //   message: `Release ${nextVersion}`,
+    //   object: context.sha,
+    //   type: "commit",
+    // });
 
-    await octokit.rest.git.createRef({
-      owner,
-      repo,
-      ref: `refs/tags/${nextVersion}`,
-      sha: createTagResponse.data.sha,
-    });
+    // await octokit.rest.git.createRef({
+    //   owner,
+    //   repo,
+    //   ref: `refs/tags/${nextVersion}`,
+    //   sha: createTagResponse.data.sha,
+    // });
   } catch (error) {
     setFailed((error as Error)?.message ?? "Unknown error");
   }
