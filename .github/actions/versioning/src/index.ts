@@ -1,4 +1,4 @@
-import { getInput, setFailed } from "@actions/core";
+import { getInput, setFailed, info } from "@actions/core";
 import { getOctokit, context } from "@actions/github";
 import { execSync } from "child_process";
 
@@ -94,12 +94,14 @@ async function run() {
       repo,
       pull_number,
     });
-
+    info(`Application commitsData: ${commitsData}`);
+    info(`Application commit message: ${commitsData[0].commit.message}`);
     if (commitsData.length !== 1) {
       throw new Error(
         "The pull request contains multiple commits. PR must be squashed"
       );
     }
+
     const commitMessage = commitsData[0].commit.message;
     const versionIncrementType = getVersionIncrementType(commitMessage);
     if (versionIncrementType === "NONE") {
@@ -107,7 +109,9 @@ async function run() {
     }
 
     const currentVersion = getCurrentVersion();
+    info(`Application current Version: ${currentVersion}`);
     const nextVersion = getNextVersion(currentVersion, versionIncrementType);
+    info(`Application next Version: ${nextVersion}`);
 
     const createTagResponse = await octokit.rest.git.createTag({
       owner,
