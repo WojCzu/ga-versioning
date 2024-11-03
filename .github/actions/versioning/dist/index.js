@@ -31821,8 +31821,8 @@ const core_1 = __nccwpck_require__(7484);
 const github_1 = __nccwpck_require__(3228);
 const child_process_1 = __nccwpck_require__(5317);
 function getVersionIncrementType(commitMessage, minorPrefixes = ["feat"], patchPrefixes = ["fix"]) {
-    const minorRegex = new RegExp(`^(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
-    const patchRegex = new RegExp(`^(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
+    const minorRegex = new RegExp(`^(\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
+    const patchRegex = new RegExp(`^(\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
     if (minorRegex.test(commitMessage) && commitMessage.includes("!")) {
         return "MAJOR";
     }
@@ -31882,29 +31882,13 @@ async function run() {
             throw new Error("This action should only run after a PR is merged");
         }
         const { owner, repo } = github_1.context.repo;
-        const pull_number = pullRequest.number;
-        const { data: commitsData } = await octokit.rest.pulls.listCommits({
-            owner,
-            repo,
-            pull_number,
-        });
         const latestCommitSha = github_1.context.sha;
-        // Retrieve the commit details using the SHA of the latest commit
         const { data: commitData } = await octokit.rest.git.getCommit({
             owner,
             repo,
             commit_sha: latestCommitSha,
         });
-        (0, core_1.info)("OLD WAY");
-        (0, core_1.info)(`Application commitsData: ${commitsData}`);
-        (0, core_1.info)(`Application commit message: ${commitsData[0].commit.message}`);
-        (0, core_1.info)("NEW WAY");
-        (0, core_1.info)(`Application commitsData: ${commitData}`);
-        (0, core_1.info)(`Application commit message: ${commitData.message}`);
-        if (commitsData.length !== 1) {
-            throw new Error("The pull request contains multiple commits. PR must be squashed");
-        }
-        const commitMessage = commitsData[0].commit.message;
+        const commitMessage = commitData.message;
         const versionIncrementType = getVersionIncrementType(commitMessage);
         if (versionIncrementType === "NONE") {
             throw new Error("Pull request does not contain correct commit messages");

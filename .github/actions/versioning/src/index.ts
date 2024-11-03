@@ -9,11 +9,11 @@ function getVersionIncrementType(
   patchPrefixes: string[] = ["fix"]
 ): Increment | "NONE" {
   const minorRegex = new RegExp(
-    `^(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
+    `^(\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
     "m"
   );
   const patchRegex = new RegExp(
-    `^(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
+    `^(\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
     "m"
   );
   if (minorRegex.test(commitMessage) && commitMessage.includes("!")) {
@@ -87,13 +87,6 @@ async function run() {
     }
 
     const { owner, repo } = context.repo;
-    const pull_number = pullRequest.number;
-
-    const { data: commitsData } = await octokit.rest.pulls.listCommits({
-      owner,
-      repo,
-      pull_number,
-    });
     const latestCommitSha = context.sha;
 
     const { data: commitData } = await octokit.rest.git.getCommit({
@@ -101,21 +94,8 @@ async function run() {
       repo,
       commit_sha: latestCommitSha,
     });
-    info("OLD WAY");
-    info(`Application commitsData: ${commitsData}`);
-    info(`Application commit message: ${commitsData[0].commit.message}`);
 
-    info("NEW WAY");
-    info(`Application commitsData: ${commitData}`);
-    info(`Application commit message: ${commitData.message}`);
-
-    if (commitsData.length !== 1) {
-      throw new Error(
-        "The pull request contains multiple commits. PR must be squashed"
-      );
-    }
-
-    const commitMessage = commitsData[0].commit.message;
+    const commitMessage = commitData.message;
     const versionIncrementType = getVersionIncrementType(commitMessage);
     if (versionIncrementType === "NONE") {
       throw new Error("Pull request does not contain correct commit messages");
