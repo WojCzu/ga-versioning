@@ -94,10 +94,21 @@ async function run() {
       repo,
       pull_number,
     });
-    console.log(`Application commitsData: ${commitsData}`);
+    const latestCommitSha = context.sha;
+
+    const { data: commitData } = await octokit.rest.git.getCommit({
+      owner,
+      repo,
+      commit_sha: latestCommitSha,
+    });
+    info("OLD WAY");
     info(`Application commitsData: ${commitsData}`);
-    console.log(`Application commit message: ${commitsData[0].commit.message}`);
     info(`Application commit message: ${commitsData[0].commit.message}`);
+
+    info("NEW WAY");
+    info(`Application commitsData: ${commitData}`);
+    info(`Application commit message: ${commitData.message}`);
+
     if (commitsData.length !== 1) {
       throw new Error(
         "The pull request contains multiple commits. PR must be squashed"
@@ -111,27 +122,25 @@ async function run() {
     }
 
     const currentVersion = getCurrentVersion();
-    console.log(`Application current Version: ${currentVersion}`);
     info(`Application current Version: ${currentVersion}`);
     const nextVersion = getNextVersion(currentVersion, versionIncrementType);
-    console.log(`Application next Version: ${nextVersion}`);
     info(`Application next Version: ${nextVersion}`);
 
-    // const createTagResponse = await octokit.rest.git.createTag({
-    //   owner,
-    //   repo,
-    //   tag: nextVersion,
-    //   message: `Release ${nextVersion}`,
-    //   object: context.sha,
-    //   type: "commit",
-    // });
+    const createTagResponse = await octokit.rest.git.createTag({
+      owner,
+      repo,
+      tag: nextVersion,
+      message: `Release ${nextVersion}`,
+      object: context.sha,
+      type: "commit",
+    });
 
-    // await octokit.rest.git.createRef({
-    //   owner,
-    //   repo,
-    //   ref: `refs/tags/${nextVersion}`,
-    //   sha: createTagResponse.data.sha,
-    // });
+    await octokit.rest.git.createRef({
+      owner,
+      repo,
+      ref: `refs/tags/${nextVersion}`,
+      sha: createTagResponse.data.sha,
+    });
   } catch (error) {
     setFailed((error as Error)?.message ?? "Unknown error");
   }
