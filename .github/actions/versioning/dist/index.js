@@ -31821,8 +31821,8 @@ const core_1 = __nccwpck_require__(7484);
 const github_1 = __nccwpck_require__(3228);
 const child_process_1 = __nccwpck_require__(5317);
 function getVersionIncrementType(commitMessage, minorPrefixes = ["feat"], patchPrefixes = ["fix"]) {
-    const minorRegex = new RegExp(`^(\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
-    const patchRegex = new RegExp(`^(\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
+    const minorRegex = new RegExp(`^(\\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
+    const patchRegex = new RegExp(`^(\\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
     if (minorRegex.test(commitMessage) && commitMessage.includes("!")) {
         return "MAJOR";
     }

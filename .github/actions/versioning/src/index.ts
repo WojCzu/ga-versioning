@@ -9,11 +9,11 @@ function getVersionIncrementType(
   patchPrefixes: string[] = ["fix"]
 ): Increment | "NONE" {
   const minorRegex = new RegExp(
-    `^(\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
+    `^(\\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
     "m"
   );
   const patchRegex = new RegExp(
-    `^(\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
+    `^(\\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
     "m"
   );
   if (minorRegex.test(commitMessage) && commitMessage.includes("!")) {
