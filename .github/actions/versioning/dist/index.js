@@ -31820,6 +31820,15 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(7484);
 const github_1 = __nccwpck_require__(3228);
 const child_process_1 = __nccwpck_require__(5317);
+function fetchTags() {
+    try {
+        (0, child_process_1.execSync)("git fetch --tags");
+        (0, core_1.info)("Fetched all tags successfully.");
+    }
+    catch (error) {
+        (0, core_1.setFailed)(`Failed to fetch tags: ${error.message}`);
+    }
+}
 function getVersionIncrementType(commitMessage, minorPrefixes = ["feat"], patchPrefixes = ["fix"]) {
     const minorRegex = new RegExp(`^(\\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
     const patchRegex = new RegExp(`^(\\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`, "m");
@@ -31839,7 +31848,9 @@ function getVersionIncrementType(commitMessage, minorPrefixes = ["feat"], patchP
 }
 function getCurrentVersion() {
     try {
-        const tag = (0, child_process_1.execSync)("git describe --tags --abbrev=0").toString().trim();
+        const tag = (0, child_process_1.execSync)("git tag --sort=-v:refname | head -n 1")
+            .toString()
+            .trim();
         return tag;
     }
     catch (error) {
@@ -31874,6 +31885,7 @@ async function run() {
     const token = (0, core_1.getInput)("gh-token");
     const octokit = (0, github_1.getOctokit)(token);
     const pullRequest = github_1.context.payload.pull_request;
+    fetchTags();
     try {
         if (!pullRequest) {
             throw new Error("This action can only be run on Pull Request");

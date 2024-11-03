@@ -3,6 +3,16 @@ import { getOctokit, context } from "@actions/github";
 import { execSync } from "child_process";
 
 type Increment = "MAJOR" | "MINOR" | "PATCH";
+
+function fetchTags() {
+  try {
+    execSync("git fetch --tags");
+    info("Fetched all tags successfully.");
+  } catch (error) {
+    setFailed(`Failed to fetch tags: ${(error as Error).message}`);
+  }
+}
+
 function getVersionIncrementType(
   commitMessage: string,
   minorPrefixes: string[] = ["feat"],
@@ -33,7 +43,9 @@ function getVersionIncrementType(
 
 function getCurrentVersion(): string {
   try {
-    const tag = execSync("git describe --tags --abbrev=0").toString().trim();
+    const tag = execSync("git tag --sort=-v:refname | head -n 1")
+      .toString()
+      .trim();
     return tag;
   } catch (error) {
     return "v0.1.0";
@@ -78,6 +90,7 @@ async function run() {
   const octokit = getOctokit(token);
   const pullRequest = context.payload.pull_request;
 
+  fetchTags();
   try {
     if (!pullRequest) {
       throw new Error("This action can only be run on Pull Request");
