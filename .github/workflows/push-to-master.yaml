@@ -1,7 +1,8 @@
 name: "CI/CD on push to master"
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - master
 

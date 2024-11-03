@@ -82,6 +82,9 @@ async function run() {
     if (!pullRequest) {
       throw new Error("This action can only be run on Pull Request");
     }
+    if (!pullRequest?.merged) {
+      throw new Error("This action should only run after a PR is merged");
+    }
 
     const { owner, repo } = context.repo;
     const pull_number = pullRequest.number;
