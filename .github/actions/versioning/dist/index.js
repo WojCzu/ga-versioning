@@ -31878,6 +31878,9 @@ async function run() {
         if (!pullRequest) {
             throw new Error("This action can only be run on Pull Request");
         }
+        if (!pullRequest?.merged) {
+            throw new Error("This action should only run after a PR is merged");
+        }
         const { owner, repo } = github_1.context.repo;
         const pull_number = pullRequest.number;
         const { data: commitsData } = await octokit.rest.pulls.listCommits({
@@ -31885,6 +31888,10 @@ async function run() {
             repo,
             pull_number,
         });
+        console.log(`Application commitsData: ${commitsData}`);
+        (0, core_1.info)(`Application commitsData: ${commitsData}`);
+        console.log(`Application commit message: ${commitsData[0].commit.message}`);
+        (0, core_1.info)(`Application commit message: ${commitsData[0].commit.message}`);
         if (commitsData.length !== 1) {
             throw new Error("The pull request contains multiple commits. PR must be squashed");
         }
@@ -31894,21 +31901,25 @@ async function run() {
             throw new Error("Pull request does not contain correct commit messages");
         }
         const currentVersion = getCurrentVersion();
+        console.log(`Application current Version: ${currentVersion}`);
+        (0, core_1.info)(`Application current Version: ${currentVersion}`);
         const nextVersion = getNextVersion(currentVersion, versionIncrementType);
-        const createTagResponse = await octokit.rest.git.createTag({
-            owner,
-            repo,
-            tag: nextVersion,
-            message: `Release ${nextVersion}`,
-            object: github_1.context.sha,
-            type: "commit",
-        });
-        await octokit.rest.git.createRef({
-            owner,
-            repo,
-            ref: `refs/tags/${nextVersion}`,
-            sha: createTagResponse.data.sha,
-        });
+        console.log(`Application next Version: ${nextVersion}`);
+        (0, core_1.info)(`Application next Version: ${nextVersion}`);
+        // const createTagResponse = await octokit.rest.git.createTag({
+        //   owner,
+        //   repo,
+        //   tag: nextVersion,
+        //   message: `Release ${nextVersion}`,
+        //   object: context.sha,
+        //   type: "commit",
+        // });
+        // await octokit.rest.git.createRef({
+        //   owner,
+        //   repo,
+        //   ref: `refs/tags/${nextVersion}`,
+        //   sha: createTagResponse.data.sha,
+        // });
     }
     catch (error) {
         (0, core_1.setFailed)(error?.message ?? "Unknown error");
