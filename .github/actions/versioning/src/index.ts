@@ -94,8 +94,8 @@ async function run() {
       repo,
       pull_number,
     });
-    info(`Application commitsData: ${commitsData}`);
-    info(`Application commit message: ${commitsData[0].commit.message}`);
+    console.log(`Application commitsData: ${commitsData}`);
+    console.log(`Application commit message: ${commitsData[0].commit.message}`);
     if (commitsData.length !== 1) {
       throw new Error(
         "The pull request contains multiple commits. PR must be squashed"
@@ -109,9 +109,9 @@ async function run() {
     }
 
     const currentVersion = getCurrentVersion();
-    info(`Application current Version: ${currentVersion}`);
+    console.log(`Application current Version: ${currentVersion}`);
     const nextVersion = getNextVersion(currentVersion, versionIncrementType);
-    info(`Application next Version: ${nextVersion}`);
+    console.log(`Application next Version: ${nextVersion}`);
 
     // const createTagResponse = await octokit.rest.git.createTag({
     //   owner,
