@@ -7,38 +7,9 @@ type Increment = "MAJOR" | "MINOR" | "PATCH";
 function fetchTags() {
   try {
     execSync("git fetch --tags");
-    info("Fetched all tags successfully.");
   } catch (error) {
     setFailed(`Failed to fetch tags: ${(error as Error).message}`);
   }
-}
-
-function getVersionIncrementType(
-  commitMessage: string,
-  minorPrefixes: string[] = ["feat"],
-  patchPrefixes: string[] = ["fix"]
-): Increment | "NONE" {
-  const minorRegex = new RegExp(
-    `^(\\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
-    "m"
-  );
-  const patchRegex = new RegExp(
-    `^(\\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: .+`,
-    "m"
-  );
-  if (minorRegex.test(commitMessage) && commitMessage.includes("!")) {
-    return "MAJOR";
-  }
-  if (patchRegex.test(commitMessage) && commitMessage.includes("!")) {
-    return "MAJOR";
-  }
-  if (minorRegex.test(commitMessage)) {
-    return "MINOR";
-  }
-  if (patchRegex.test(commitMessage)) {
-    return "PATCH";
-  }
-  return "NONE";
 }
 
 function getCurrentVersion(): string {
@@ -78,10 +49,75 @@ function getNextVersion(
       break;
     default:
       throw new Error(
-        "Invalid increment type. Expected 'major', 'minor', or 'patch'."
+        "Invalid increment type. Expected 'MAJOR', 'MINOR', or 'PATCH'."
       );
   }
   return `v${major}.${minor}.${patch}`;
+}
+
+function categorizeCommitMessages(
+  commitMessage: string,
+  minorPrefixes: string[] = ["feat"],
+  patchPrefixes: string[] = ["fix"]
+) {
+  const minorRegex = new RegExp(
+    `^(\\* )?(${minorPrefixes.join("|")})(?:\\([^)]+\\))?!?: (.+)`,
+    "gm"
+  );
+  const patchRegex = new RegExp(
+    `^(\\* )?(${patchPrefixes.join("|")})(?:\\([^)]+\\))?!?: (.+)`,
+    "gm"
+  );
+
+  const majorMessages: string[] = [];
+  const minorMessages: string[] = [];
+  const patchMessages: string[] = [];
+
+  let match;
+  while ((match = minorRegex.exec(commitMessage)) !== null) {
+    const isBreaking = match[0].includes("!");
+    if (isBreaking) {
+      majorMessages.push(match[3]);
+    } else {
+      minorMessages.push(match[3]);
+    }
+  }
+
+  while ((match = patchRegex.exec(commitMessage)) !== null) {
+    const isBreaking = match[0].includes("!");
+    if (isBreaking) {
+      majorMessages.push(match[3]);
+    } else {
+      patchMessages.push(match[3]);
+    }
+  }
+
+  return { majorMessages, minorMessages, patchMessages };
+}
+function generateReleaseNotes(
+  majorMessages: string[],
+  minorMessages: string[],
+  patchMessages: string[],
+  nextVersion: string
+) {
+  let releaseNotes = `## Release ${nextVersion}\n\n`;
+
+  if (majorMessages.length > 0) {
+    releaseNotes += "### BREAKING CHANGES:\n";
+    majorMessages.forEach((msg) => (releaseNotes += `- ${msg}\n`));
+  }
+
+  if (minorMessages.length > 0) {
+    releaseNotes += "### MAJOR CHANGES:\n";
+    minorMessages.forEach((msg) => (releaseNotes += `- ${msg}\n`));
+  }
+
+  if (patchMessages.length > 0) {
+    releaseNotes += "### MINOR CHANGES:\n";
+    patchMessages.forEach((msg) => (releaseNotes += `- ${msg}\n`));
+  }
+
+  return releaseNotes;
 }
 
 async function run() {
@@ -109,21 +145,39 @@ async function run() {
     });
 
     const commitMessage = commitData.message;
-    const versionIncrementType = getVersionIncrementType(commitMessage);
-    if (versionIncrementType === "NONE") {
+    const { majorMessages, minorMessages, patchMessages } =
+      categorizeCommitMessages(commitMessage);
+
+    let versionIncrementType: Increment | null = null;
+    if (majorMessages.length) {
+      versionIncrementType = "MAJOR";
+    } else if (minorMessages.length) {
+      versionIncrementType = "MINOR";
+    } else if (patchMessages.length) {
+      versionIncrementType = "PATCH";
+    }
+
+    if (versionIncrementType === null) {
       throw new Error("Pull request does not contain correct commit messages");
     }
 
     const currentVersion = getCurrentVersion();
-    info(`Application current Version: ${currentVersion}`);
+    info(`Current Application Version: ${currentVersion}`);
     const nextVersion = getNextVersion(currentVersion, versionIncrementType);
-    info(`Application next Version: ${nextVersion}`);
+    info(`Next Application Version: ${nextVersion}`);
 
+    const releaseNotes = generateReleaseNotes(
+      majorMessages,
+      minorMessages,
+      patchMessages,
+      nextVersion
+    );
+    info(releaseNotes);
     const createTagResponse = await octokit.rest.git.createTag({
       owner,
       repo,
       tag: nextVersion,
-      message: `Release ${nextVersion}`,
+      message: releaseNotes,
       object: context.sha,
       type: "commit",
     });
